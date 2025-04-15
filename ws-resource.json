@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "/index.html": {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "max-age=3500"
+    }
+  },
+  "routes": {
+    "/*": "/index.html"
+  },
+  "metadata": {
+    "link": "https://dmc-game.wal.app",
+    "image_url": "https://iili.io/30dfC8X.png",
+    "description": "Flap to the future a DMC mini game.",
+    "project_url": "https://github.com/donniegraham/flap-to-the-future/",
+    "creator": "Donnie Graham"
+  }
+}

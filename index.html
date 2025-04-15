@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flap to the future</title>
+
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <style>
+      /* Basic reset and body styling */
+      body {
+        margin: 0;
+        overflow: hidden; /* Prevent scrollbars */
+        font-family: "Arial Black", Gadget, sans-serif; /* Chunky font */
+        touch-action: none; /* Prevent default touch actions */
+        background-color: #000010; /* Very dark blue/black fallback */
+        user-select: none; /* Prevent text selection globally */
+        -webkit-user-select: none; /* Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE/Edge */
+      }
+
+      /* Game container */
+      #game {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        z-index: 1;
+        /* Background color now primarily handled by p5 canvas */
+        overflow: hidden; /* Hide obstacles moving off-screen */
+      }
+
+      /* Score Area Container */
+      .score-container {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10;
+        display: flex; /* Align items horizontally */
+        align-items: center; /* Align items vertically */
+        background: rgba(
+          0,
+          0,
+          0,
+          0.5
+        ); /* Optional: background for the whole area */
+        padding: 5px 10px;
+        border-radius: 10px;
+        /* user-select is inherited from body */
+      }
+
+      /* Score display */
+      .score {
+        color: white;
+        font-size: 1.8rem;
+        font-weight: bold;
+        text-align: center;
+        text-shadow: 0 0 5px #ff0; /* Yellow glow */
+        margin-right: 10px;
+        margin-left: 10px; /* Space after pause button */
+      }
+
+      /* Banner for Game Over / Start */
+      .banner {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.7);
+        padding: 30px 40px; /* Adjusted padding */
+        border-radius: 10px;
+        color: white;
+        font-weight: bold;
+        z-index: 11; /* Above score and pause overlay */
+        text-align: center;
+        font-size: 1.5rem; /* Base size for text within */
+        line-height: 1.4;
+        position: relative; /* Needed for absolute positioning inside */
+        overflow: hidden;
+        min-width: 300px; /* Ensure banner is wide enough */
+      }
+
+      /* DeLorean styling */
+      .delorean {
+        position: absolute;
+        /* Start position and transition for entry */
+        left: 0px; /* Start at left edge */
+        transform: translateX(0) rotate(0deg); /* Initial transform */
+        opacity: 0; /* Start hidden */
+        transition: left 1s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease-in,
+          transform 0.4s ease-out; /* Slower tilt */
+        /* top: set by JavaScript */
+        width: 100px;
+        height: 37px;
+        background-image: url("https://i.postimg.cc/9XBXnvZH/delorean.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: 5;
+      }
+      /* Add error handling for the image */
+      .delorean[style*="url('https://i.postimg.cc/9XBXnvZH/delorean.png')"]
+      {
+        background-image: url("https://i.postimg.cc/9XBXnvZH/delorean.png"),
+          linear-gradient(grey, darkgrey); /* Fallback gradient */
+      }
+
+      /* Booster Effect Styling */
+      .delorean::after {
+        content: "";
+        position: absolute;
+        left: -25px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 40px;
+        height: 15px;
+        background: linear-gradient(
+          to left,
+          rgba(0, 220, 255, 0),
+          rgba(0, 200, 255, 0.8),
+          #0cf
+        );
+        border-radius: 50% 0 0 50%;
+        opacity: 0;
+        transition: opacity 0.15s ease-out;
+        z-index: -1;
+      }
+      .delorean.booster-active::after {
+        opacity: 1;
+      }
+
+      /* Obstacle styling (Futuristic Skyscrapers) */
+      .obstacle-pipe {
+        position: absolute;
+        width: 80px;
+        /* background/shadow set by JS */
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-size: cover;
+        z-index: 3;
+        border: 1px solid rgba(0, 150, 150, 0.5);
+      }
+      .obstacle-top {
+        top: 0;
+      }
+      .obstacle-bottom {
+        bottom: 0;
+      }
+
+      /* Score Logo and Text Styling */
+      .score-logo {
+        width: 40px;
+        height: 40px;
+        margin-left: 8px;
+        animation: bounce 1.5s ease-in-out infinite;
+      }
+
+      .score-text {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: bold;
+        text-shadow: 0 0 4px #0ff; /* Cyan glow */
+        margin-right: 5px;
+      }
+
+      /* Styling for large background logo in banner */
+      .banner-bg-logo {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        opacity: 0.3;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      /* Styling for text content wrapper within banner */
+      .banner-text-content {
+        position: relative; /* Needed to establish stacking context */
+        z-index: 2; /* Ensure text is above the background logo */
+        display: flex; /* Use flexbox for vertical layout */
+        flex-direction: column; /* Stack items vertically */
+        align-items: center; /* Center items horizontally */
+        padding-bottom: 60px; /* Add padding to prevent overlap with absolute buttons */
+      }
+
+      /* Styling for Game Over Score Display */
+      .current-score {
+        font-size: 2.8rem; /* Large score */
+        color: #ffd700; /* Gold */
+        text-shadow: 0 0 5px #000, 0 0 10px #ff8c00; /* Dark shadow + orange glow */
+        margin-top: 0; /* Reset margin */
+        margin-bottom: 5px; /* Space below current score */
+        font-weight: bold;
+        line-height: 1.1;
+      }
+      .top-score {
+        font-size: 1.2rem; /* Smaller font for top score */
+        color: #eee; /* Lighter color */
+        margin-bottom: 0; /* Remove bottom margin */
+        font-weight: normal;
+        text-shadow: 0 0 3px #000;
+      }
+
+      /* Bouncing animation keyframes */
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+
+      /* Coin Styling */
+      .coin {
+        position: absolute;
+        width: 35px;
+        height: 35px;
+        background-image: url("https://img.cryptorank.io/coins/de_lorean1738931968450.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: 50%;
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+        z-index: 4;
+        animation: spin 1.2s linear infinite;
+      }
+
+      /* Bitcoin Coin Styling */
+      .bitcoin-coin {
+        position: absolute;
+        width: 35px;
+        height: 35px;
+        background-image: url("https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1200px-Bitcoin.svg.png"); /* Bitcoin Logo */
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(255, 255, 0, 0.9); /* Brighter Yellow Glow */
+        z-index: 4;
+        animation: spin 1s linear infinite; /* Slightly faster spin? */
+      }
+
+      /* Keyframes for coin spin */
+      @keyframes spin {
+        from {
+          transform: rotateY(0deg);
+        }
+        to {
+          transform: rotateY(360deg);
+        }
+      }
+
+      /* Portal Styling */
+      #portal {
+        position: absolute;
+        left: 40px;
+        transform: translateY(-50%) scale(1);
+        top: 50%;
+        width: 80px;
+        height: 120px;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(0, 150, 255, 0.1) 0%,
+          rgba(0, 100, 255, 0.6) 60%,
+          #05f 100%
+        );
+        border-radius: 50%;
+        border: 2px solid #0af;
+        box-shadow: 0 0 15px #0cf, 0 0 30px #0af, inset 0 0 10px #5ef;
+        z-index: 6;
+        opacity: 1;
+        transform-origin: center center;
+        animation: pulse 2s infinite ease-in-out;
+        display: block;
+        pointer-events: none;
+      }
+
+      /* Portal closing animation */
+      #portal.portal-closing {
+        animation: shrinkFade 1.5s ease-out forwards,
+          pulse 2s infinite ease-in-out;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 15px #0cf, 0 0 30px #0af, inset 0 0 10px #5ef;
+        }
+        50% {
+          box-shadow: 0 0 25px #0df, 0 0 45px #0bf, inset 0 0 15px #7ff;
+        }
+      }
+
+      /* Keyframes for shrinking/fading portal */
+      @keyframes shrinkFade {
+        to {
+          transform: translateY(-50%) scale(0);
+          opacity: 0;
+        }
+      }
+
+      /* Reset Button Styling */
+      .reset-button {
+        /* --- MODIFIED: Positioned absolutely --- */
+        position: absolute;
+        right: 15px; /* Align with share button */
+        bottom: 65px; /* Position above share button (15px + ~40px + 10px margin) */
+        z-index: 2; /* Ensure above bg logo */
+        /* --- End Modification --- */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        /* margin: 0 auto; */ /* Removed margin auto */
+        /* margin-top: 10px; */ /* Removed top margin */
+        /* margin-bottom: 20px; */ /* Removed bottom margin */
+        padding: 10px 15px;
+        background-color: #0af;
+        color: white;
+        border: 1px solid #5ef;
+        border-radius: 8px;
+        font-family: "Arial Black", Gadget, sans-serif;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        text-shadow: 0 0 3px #000;
+        transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 0 5px #0cf, 0 0 10px #0af;
+      }
+      .reset-button:hover,
+      .reset-button:focus {
+        background-color: #5df;
+        box-shadow: 0 0 8px #0cf, 0 0 15px #0af;
+        outline: none;
+      }
+      /* Style for SVG inside Reset Button */
+      .reset-button svg {
+        width: 0.9em;
+        height: 0.9em;
+        stroke: currentColor;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+        margin-right: 8px; /* Space between icon and text */
+      }
+
+      /* Share Button Styling */
+      .share-button {
+        position: absolute;
+        bottom: 15px; /* Position near bottom */
+        right: 15px; /* Position near right */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 15px;
+        background-color: #1da1f2; /* X.com Blue */
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-family: "Arial Black", Gadget, sans-serif;
+        font-size: 0.9rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        line-height: 1; /* Ensure icon aligns well */
+        z-index: 2; /* Ensure it's above background logo */
+      }
+      .share-button:hover,
+      .share-button:focus {
+        background-color: #0c85d0; /* Darker blue */
+        outline: none;
+      }
+      /* Style for SVG inside share button */
+      .share-button svg {
+        width: 1.1em;
+        height: 1.1em;
+        fill: currentColor;
+        vertical-align: text-bottom;
+        display: inline-block;
+        margin-left: 5px; /* Space after text */
+      }
+
+      /* Footer Styling */
+      .social-footer {
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        gap: 15px;
+      }
+      .social-footer li {
+        display: inline-block;
+      }
+      .social-footer a {
+        display: block;
+      }
+      .social-footer a svg path[fill="#5E6569"] {
+        transition: fill 0.3s ease;
+      }
+      .social-footer a:hover svg path[fill="#5E6569"] {
+        fill: #0ff;
+      }
+
+      /* Pause UI Styling */
+      .ui-button {
+        /* General style for UI buttons */
+        background-color: rgba(0, 0, 0, 0.5);
+        border: 1px solid #aaa;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1.2rem; /* Adjusted size */
+        line-height: 1;
+        min-width: 30px; /* Ensure minimum width */
+        text-align: center;
+      }
+      .ui-button:hover {
+        background-color: rgba(50, 50, 50, 0.6);
+      }
+      #pauseButton {
+        margin-right: 10px; /* Space before score number */
+      }
+
+      .overlay {
+        position: fixed; /* Cover viewport */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8); /* Darker overlay */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 20; /* Above everything else except maybe banner */
+      }
+      .pause-content {
+        text-align: center;
+        background: rgba(30, 30, 50, 0.85);
+        padding: 40px 60px;
+        border-radius: 15px;
+        box-shadow: 0 0 20px #0ff;
+      }
+      .paused-score {
+        font-size: 2.5rem;
+        color: #ffd700;
+        text-shadow: 0 0 5px #000, 0 0 10px #ff8c00;
+        margin-bottom: 25px;
+        font-weight: bold;
+      }
+
+      /* SoundCloud Embed Styling */
+      .soundcloud-embed {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 10;
+        width: 200px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 5px;
+        padding: 5px;
+      }
+      .soundcloud-embed iframe {
+        display: block;
+        width: 100%;
+        height: 80px;
+        border: none;
+      }
+      .soundcloud-embed div {
+        font-size: 8px !important;
+        color: #cccccc !important;
+        line-break: anywhere !important;
+        word-break: normal !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+        text-overflow: ellipsis !important;
+        font-family: Interstate, Lucida Grande, Lucida Sans Unicode, Lucida Sans,
+          Garuda, Verdana, Tahoma, sans-serif !important;
+        font-weight: 100 !important;
+        margin-top: 3px;
+      }
+      .soundcloud-embed div a {
+        color: #cccccc !important;
+        text-decoration: none !important;
+      }
+
+      @media (max-width: 767px) {
+        /* Matches JS breakpoint */
+        .soundcloud-embed {
+          display: none; /* Hide the embed */
+        }
+      }
+
+      /* p5.js canvas styling (for background) */
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0; /* Behind all game elements */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game">
+      <div class="score-container">
+        <button id="pauseButton" class="ui-button" aria-label="Pause">
+          ❚❚
+        </button>
+        <div class="score" id="score">0</div>
+        <span class="score-text">$DMC</span>
+        <img
+          src="https://img.cryptorank.io/coins/de_lorean1738931968450.png"
+          class="score-logo"
+          alt="Coin Logo"
+          onerror="this.style.display='none'; console.error('Score logo failed to load.')"
+        />
+      </div>
+      <div
+        class="delorean"
+        id="delorean"
+        onerror="this.style.backgroundImage='linear-gradient(grey, darkgrey)'; console.error('DeLorean image failed to load.')"
+      ></div>
+      <div class="banner" id="banner" style="display: none"></div>
+
+      <div id="portal"></div>
+
+      <div class="soundcloud-embed">
+        <iframe
+          width="100%"
+          height="80"
+          scrolling="no"
+          frameborder="no"
+          allow="autoplay"
+          src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/355080313&color=%23ff5500&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=false"
+        >
+        </iframe>
+        <div
+          style="
+            font-size: 10px;
+            color: #cccccc;
+            line-break: anywhere;
+            word-break: normal;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-family: Interstate, Lucida Grande, Lucida Sans Unicode,
+              Lucida Sans, Garuda, Verdana, Tahoma, sans-serif;
+            font-weight: 100;
+          "
+        >
+          <a
+            href="https://soundcloud.com/psytrance-channel"
+            title="Psytrance Channel"
+            target="_blank"
+            style="color: #cccccc; text-decoration: none"
+            >Psytrance Channel</a
+          >
+          ·
+          <a
+            href="https://soundcloud.com/psytrance-channel/sets/full-psytrance-tracks-free"
+            title="Full Psytrance Tracks (All Free Downloads)"
+            target="_blank"
+            style="color: #cccccc; text-decoration: none"
+            >Full Psytrance Tracks (All Free Downloads)</a
+          >
+        </div>
+      </div>
+      <div id="pauseOverlay" class="overlay" style="display: none">
+        <div class="pause-content">
+          <div class="paused-score">Score: 0</div>
+          <button id="resumeButton" class="reset-button">Resume Game</button>
+        </div>
+      </div>
+      <ul class="social-footer">
+        <li>
+          <a
+            href="https://www.instagram.com/deloreanlabs/?hl=en"
+            target="_blank"
+            aria-label="Instagram"
+            ><svg
+              width="38"
+              height="38"
+              viewBox="0 0 38 38"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18.8515 0.000610352H18.7658C8.40174 0.000610352 0 8.40483 0 18.7719V18.8576C0 29.2248 8.40174 37.629 18.7658 37.629H18.8515C29.2155 37.629 37.6173 29.2248 37.6173 18.8576V18.7719C37.6173 8.40483 29.2155 0.000610352 18.8515 0.000610352Z"
+                fill="#EDEDED"
+              ></path>
+              <path
+                d="M24.6279 7.65637H12.988C9.77231 7.65637 7.15625 10.2732 7.15625 13.4899V24.1418C7.15625 27.3584 9.77231 29.9753 12.988 29.9753H24.6279C27.8436 29.9753 30.4596 27.3584 30.4596 24.1418V13.4899C30.4596 10.2732 27.8436 7.65637 24.6279 7.65637ZM9.21352 13.4899C9.21352 11.4083 10.907 9.71424 12.988 9.71424H24.6279C26.7089 9.71424 28.4024 11.4083 28.4024 13.4899V24.1418C28.4024 26.2234 26.7089 27.9174 24.6279 27.9174H12.988C10.907 27.9174 9.21352 26.2234 9.21352 24.1418V13.4899Z"
+                fill="#5E6569"
+              ></path>
+              <path
+                d="M18.8083 24.24C21.7987 24.24 24.2329 21.8064 24.2329 18.8138C24.2329 15.8213 21.8 13.3877 18.8083 13.3877C15.8167 13.3877 13.3838 15.8213 13.3838 18.8138C13.3838 21.8064 15.8167 24.24 18.8083 24.24ZM18.8083 15.4469C20.6653 15.4469 22.1756 16.9577 22.1756 18.8152C22.1756 20.6726 20.6653 22.1834 18.8083 22.1834C16.9514 22.1834 15.4411 20.6726 15.4411 18.8152C15.4411 16.9577 16.9514 15.4469 18.8083 15.4469Z"
+                fill="#5E6569"
+              ></path>
+              <path
+                d="M24.735 14.2651C25.5402 14.2651 26.1966 13.6099 26.1966 12.8031C26.1966 11.9963 25.5416 11.3411 24.735 11.3411C23.9284 11.3411 23.2734 11.9963 23.2734 12.8031C23.2734 13.6099 23.9284 14.2651 24.735 14.2651Z"
+                fill="#5E6569"
+              ></path></svg
+          ></a>
+        </li>
+        <li>
+          <a
+            href="https://x.com/deloreanlabs?lang=en"
+            target="_blank"
+            aria-label="X"
+            ><svg
+              width="39"
+              height="38"
+              viewBox="0 0 39 38"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M38.3083 18.8148C38.3083 28.3172 31.2667 36.173 22.1191 37.4478C21.2637 37.5664 20.3886 37.6284 19.5004 37.6284C18.475 37.6284 17.4681 37.5466 16.4876 37.3884C7.53237 35.9462 0.692383 28.1788 0.692383 18.8148C0.692383 8.42396 9.11386 0 19.5017 0C29.8895 0 38.311 8.42396 38.311 18.8148H38.3083Z"
+                fill="#EDEDED"
+              ></path>
+              <path
+                d="M8.31966 8.29834L16.9942 19.8994L8.26562 29.3319H10.2306L17.8732 21.074L24.0477 29.3319H30.7335L21.5713 17.0782L29.6963 8.29834H27.7312L20.6936 15.9036L15.0068 8.29834H8.32097H8.31966ZM11.2085 9.74584H14.2793L27.842 27.8844H24.7712L11.2085 9.74584Z"
+                fill="#5E6569"
+              ></path></svg
+          ></a>
+        </li>
+        <li>
+          <a
+            href="https://t.me/deloreanlabs"
+            target="_blank"
+            aria-label="Telegram"
+            ><svg
+              width="36"
+              height="36"
+              viewBox="0 0 36 36"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18.1033 35.7672C27.7927 35.7672 35.6476 27.9124 35.6476 18.223C35.6476 8.53355 27.7927 0.678711 18.1033 0.678711C8.41392 0.678711 0.559082 8.53355 0.559082 18.223C0.559082 27.9124 8.41392 35.7672 18.1033 35.7672Z"
+                fill="#EDEDED"
+              ></path>
+              <path
+                d="M7.86052 18.0709C7.86052 18.0709 16.6326 14.4708 19.675 13.2031C20.8412 12.6961 24.7963 11.0735 24.7963 11.0735C24.7963 11.0735 26.6217 10.3636 26.4696 12.0876C26.4188 12.7975 26.0132 15.2821 25.6076 17.9695C24.9991 21.7725 24.3399 25.9303 24.3399 25.9303C24.3399 25.9303 24.2385 27.0966 23.3765 27.2994C22.5145 27.5022 21.0947 26.5895 20.8412 26.3867C20.6384 26.2346 17.0383 23.9528 15.7199 22.8372C15.365 22.533 14.9593 21.9246 15.7706 21.2147C17.596 19.5414 19.7764 17.4625 21.0947 16.1441C21.7032 15.5356 22.3117 14.1159 19.7764 15.8398C16.1763 18.3244 12.6269 20.6569 12.6269 20.6569C12.6269 20.6569 11.8156 21.1639 10.2944 20.7076C8.77318 20.2513 6.99847 19.6428 6.99847 19.6428C6.99847 19.6428 5.7816 18.8822 7.86052 18.0709Z"
+                fill="#5E6569"
+              ></path></svg
+          ></a>
+        </li>
+        <li>
+          <a
+            href="https://discord.gg/deloreanlabs"
+            target="_blank"
+            aria-label="Discord"
+            ><svg
+              width="41"
+              height="40"
+              viewBox="0 0 41 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20.073 0H19.9819C8.95844 0 0.0222168 8.93392 0.0222168 19.9545V20.0455C0.0222168 31.0661 8.95844 40 19.9819 40H20.073C31.0964 40 40.0326 31.0661 40.0326 20.0455V19.9545C40.0326 8.93392 31.0964 0 20.073 0Z"
+                fill="#EDEDED"
+              ></path>
+              <path
+                d="M29.5314 11.6575C27.778 10.8899 25.8992 10.3247 23.9337 10.0014C23.8977 9.99506 23.8616 10.0103 23.8443 10.0422C23.6028 10.452 23.3346 10.9879 23.1478 11.408C21.0341 11.1063 18.9312 11.1063 16.8602 11.408C16.6721 10.9778 16.3945 10.452 16.1517 10.0422C16.133 10.0116 16.097 9.99633 16.0623 10.0014C14.0981 10.3247 12.2179 10.8899 10.4646 11.6575C10.4499 11.6639 10.4366 11.674 10.4272 11.688C6.86178 16.7696 5.88499 21.7263 6.36403 26.622C6.3667 26.6462 6.38005 26.6691 6.40006 26.6831C8.75256 28.3315 11.0317 29.3321 13.2681 29.9953C13.3041 30.0054 13.3415 29.9927 13.3642 29.9647C13.8926 29.2761 14.365 28.5492 14.7693 27.7842C14.7933 27.7396 14.7693 27.6862 14.7212 27.6683C13.9726 27.3972 13.2614 27.0675 12.5755 26.6933C12.5208 26.6627 12.5168 26.5889 12.5662 26.5533C12.7103 26.4502 12.8544 26.3432 12.9919 26.235C13.0172 26.2147 13.0519 26.2108 13.0813 26.2236C17.5821 28.1839 22.4552 28.1839 26.9027 26.2236C26.9321 26.2096 26.9667 26.2147 26.9921 26.2338C27.1295 26.342 27.2736 26.4502 27.4191 26.5533C27.4685 26.5889 27.4658 26.6627 27.4111 26.6933C26.7266 27.0752 26.014 27.3985 25.2641 27.6683C25.2147 27.6862 25.1933 27.7396 25.2174 27.7855C25.631 28.5479 26.1021 29.2748 26.6211 29.9647C26.6425 29.994 26.6812 30.0067 26.7172 29.9965C28.9643 29.3333 31.2434 28.3328 33.5959 26.6844C33.6159 26.6704 33.6293 26.6475 33.6319 26.6245C34.2057 20.9651 32.6712 16.0491 29.5661 11.6906C29.5581 11.6766 29.5461 11.6651 29.5301 11.6588L29.5314 11.6575ZM15.4391 23.6408C14.0834 23.6408 12.9679 22.4544 12.9679 20.9969C12.9679 19.5394 14.0634 18.3531 15.4391 18.3531C16.8148 18.3531 17.933 19.5509 17.9104 20.9969C17.9104 22.4544 16.8148 23.6408 15.4391 23.6408ZM24.5782 23.6408C23.2225 23.6408 22.107 22.4544 22.107 20.9969C22.107 19.5394 23.2025 18.3531 24.5782 18.3531C25.9539 18.3531 27.0721 19.5509 27.0495 20.9969C27.0495 22.4544 25.9659 23.6408 24.5782 23.6408Z"
+                fill="#5E6569"
+              ></path></svg
+          ></a>
+        </li>
+      </ul>
+    </div>
+
+    <script>
+      // --- Game Logic (Vanilla JS - Flappy Style) ---
+
+      // Get references to HTML elements
+      const delorean = document.getElementById("delorean");
+      const game = document.getElementById("game");
+      const scoreEl = document.getElementById("score");
+      const bannerEl = document.getElementById("banner");
+      const pauseButton = document.getElementById("pauseButton");
+      const pauseOverlay = document.getElementById("pauseOverlay");
+
+      // --- Game Constants ---
+      let gravity; // Set in initializeGame based on screen width
+      const flapStrength = -7; // Upward velocity impulse on flap
+      const pipeWidth = 80; // Width of obstacle pipes
+      const pipeGap = 160; // Vertical gap between pipes
+      const boosterDuration = 200; // How long booster effect lasts in ms
+      let baseGameSpeed; // Set in initializeGame based on screen width
+      const baseSpawnInterval = 2400; // Starting time between spawns
+      // Coin Constants
+      const coinWidth = 35; // Match CSS size
+      const coinHeight = 35; // Match CSS size
+      const coinSpawnChance = 1.0; // Always spawn coin
+
+      // Logo URL for game over screen
+      const gameOverLogoUrl =
+        "https://deloreanlabs.com/_next/image?url=%2Fassets%2Fimages%2Fdmc-coin-1.png&w=1080&q=75"; // Same as score logo
+      const bitcoinLogoUrl =
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1200px-Bitcoin.svg.png";
+
+      // --- Game State Variables ---
+      let playerY; // Vertical position (top of DeLorean)
+      let playerVelocityY; // Vertical velocity
+      let playerWidth; // Store player dimensions
+      let playerHeight;
+      let obstacles = []; // Array holds {topEl, bottomEl, x, width, coinEl, coinCollected, isBonus}
+      let score;
+      let topScore = 0; // Track top score
+      let lastSpawnTime = 0;
+      let gameActive = false; // Start inactive
+      let animationFrameId;
+      let boosterTimeoutId = null; // To manage the booster effect timeout
+      let tiltTimeoutId = null; // Timeout ID for tilt reset
+      let gameSpeed; // Current horizontal speed (now using let)
+      let spawnInterval; // Current spawn interval (now using let)
+      let currentObstacleColor1 = "#2c3e50";
+      let currentObstacleColor2 = "#1a2531";
+      let currentObstacleGlow = "rgba(0, 255, 255, 0.6)";
+      let isPaused = false; // Pause State
+      let coinSpawnCounter = 0; // Coin Spawn Counter
+
+      // --- Named event handlers ---
+      const startGameHandler = () => startGameHandlerFunc();
+      // Using direct call for reset button listener now
+
+      // --- Initialization ---
+      function initializeGame() {
+        console.log("--- Running initializeGame ---");
+
+        // Adjust physics based on screen width
+        const mobileBreakpoint = 768; // Pixels
+        if (window.innerWidth < mobileBreakpoint) {
+          console.log("Mobile view detected, adjusting physics.");
+          gravity = 0.3; // Slower gravity
+          baseGameSpeed = 2.5; // Slower horizontal speed
+        } else {
+          console.log("Desktop view detected, using standard physics.");
+          gravity = 0.4; // Standard gravity
+          baseGameSpeed = 3; // Standard horizontal speed
+        }
+
+        playerWidth = delorean.offsetWidth;
+        playerHeight = delorean.offsetHeight;
+        playerY = window.innerHeight / 2 - playerHeight / 2; // Start vertically centered
+        playerVelocityY = 0;
+        score = 0;
+        obstacles = [];
+        lastSpawnTime = 0;
+        gameActive = false;
+        isPaused = false; // Reset pause state
+        if (pauseOverlay) pauseOverlay.style.display = "none"; // Hide overlay
+        gameSpeed = baseGameSpeed; // Initialize gameSpeed from base
+        spawnInterval = baseSpawnInterval; // Initialize spawnInterval from base
+        currentObstacleColor1 = "#2c3e50"; // Reset colors
+        currentObstacleColor2 = "#1a2531";
+        currentObstacleGlow = "rgba(0, 255, 255, 0.6)";
+        coinSpawnCounter = 0; // Reset coin counter
+        scoreEl.textContent = score;
+        // Set initial car position and style for entry animation
+        delorean.style.transition = "none"; // Disable transition during reset
+        delorean.style.opacity = "0"; // Start hidden
+        delorean.style.left = "0px"; // Start at left edge
+        delorean.style.transform = "translateX(0) rotate(0deg)"; // Reset transform
+        delorean.style.top = `${playerY}px`; // Set initial vertical position
+
+        delorean.classList.remove("booster-active");
+        if (boosterTimeoutId) clearTimeout(boosterTimeoutId);
+        if (tiltTimeoutId) clearTimeout(tiltTimeoutId); // Clear tilt timeout
+
+        document
+          .querySelectorAll(".obstacle-pipe")
+          .forEach((pipe) => pipe.remove());
+        document
+          .querySelectorAll(".coin, .bitcoin-coin")
+          .forEach((coin) => coin.remove()); // Remove both types
+        bannerEl.innerHTML = "Click or Press Space to Flap!"; // Reset banner text
+        bannerEl.style.display = "block";
+
+        // Ensure portal is visible and reset
+        const portalEl = document.getElementById("portal");
+        if (portalEl) {
+          portalEl.style.display = "block";
+          portalEl.classList.remove("portal-closing");
+          portalEl.style.opacity = "1";
+          portalEl.style.transform = "translateY(-50%) scale(1)";
+        }
+
+        // Setup banner click listener for START
+        bannerEl.removeEventListener("click", initializeGame); // Remove direct reset listener if any
+        bannerEl.removeEventListener("click", startGameHandler); // Remove previous start listener
+        bannerEl.addEventListener("click", startGameHandler); // Add start listener
+        console.log("Added startGameHandler listener to banner");
+
+        // Remove reset button listener if it exists from previous game over
+        const resetButton = document.getElementById("resetButton");
+        if (resetButton) {
+          const newButton = resetButton.cloneNode(true);
+          if (resetButton.parentNode) {
+            // Check if parent exists
+            resetButton.parentNode.replaceChild(newButton, resetButton);
+            console.log(
+              "Cleared listeners from potential reset button during init"
+            );
+          }
+        }
+        // Remove share button listener if it exists
+        const shareButton = document.getElementById("shareButton");
+        if (shareButton) {
+          const newShareButton = shareButton.cloneNode(true);
+          if (shareButton.parentNode) {
+            shareButton.parentNode.replaceChild(newShareButton, shareButton);
+            console.log(
+              "Cleared listeners from potential share button during init"
+            );
+          }
+        }
+
+        // Load Top Score
+        topScore = parseInt(localStorage.getItem("flappyTopScore") || "0");
+        console.log("Loaded Top Score:", topScore);
+
+        console.log("Player Y reset to:", playerY);
+        console.log("Obstacles cleared:", obstacles.length);
+
+        if (window.resetBackground) {
+          window.resetBackground();
+        } else {
+          console.warn(
+            "window.resetBackground function not found by main game logic."
+          );
+        }
+        // Re-enable transition after reset styles are applied
+        setTimeout(() => {
+          if (delorean) {
+            // Check if delorean still exists
+            delorean.style.transition =
+              "left 1s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease-in, transform 0.4s ease-out";
+          }
+        }, 10);
+      }
+
+      // --- Handler function for starting ---
+      function startGameHandlerFunc() {
+        if (gameActive || isPaused) return;
+        console.log("--- Running startGameHandler (Start Triggered) ---");
+
+        bannerEl.removeEventListener("click", startGameHandler);
+        console.log("Removed startGameHandler listener from banner");
+
+        // Trigger portal animation
+        const portalEl = document.getElementById("portal");
+        if (portalEl) portalEl.classList.add("portal-closing");
+
+        bannerEl.style.display = "none"; // Hide banner text
+
+        // --- Start game logic immediately ---
+        console.log("--- Starting game immediately ---");
+        playerWidth = delorean.offsetWidth;
+        playerHeight = delorean.offsetHeight;
+        gameActive = true;
+        lastSpawnTime = performance.now();
+
+        // Trigger car entry animation
+        // Ensure transition is enabled before changing styles
+        delorean.style.transition =
+          "left 1s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease-in, transform 0.4s ease-out";
+        requestAnimationFrame(() => {
+          // Use rAF to ensure styles are ready for transition
+          delorean.style.opacity = "1";
+          delorean.style.left = "50%"; // Target center position
+          delorean.style.transform = "translateX(-50%) rotate(0deg)"; // Ensure final state includes rotation
+        });
+
+        flap(); // Initial flap
+        if (!animationFrameId) {
+          // Prevent multiple loops if somehow called again
+          animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        console.log("gameActive set to:", gameActive);
+      }
+
+      // --- Functions ---
+      function flap() {
+        if (!gameActive || isPaused) {
+          return;
+        } // Don't flap if game not active or paused
+        playerVelocityY = flapStrength;
+
+        // Apply tilt transform
+        delorean.style.transform = "translateX(-50%) rotate(-10deg)"; // Tilt up (Reduced)
+        // Clear previous tilt reset timeout if exists
+        if (tiltTimeoutId) clearTimeout(tiltTimeoutId);
+        // Set timeout to reset rotation to tilt down
+        tiltTimeoutId = setTimeout(() => {
+          if (gameActive && !isPaused) {
+            // Only reset if game still active and not paused
+            delorean.style.transform = "translateX(-50%) rotate(10deg)"; // Tilt down (Reduced)
+          }
+          tiltTimeoutId = null;
+        }, 150); // Duration for upward tilt (can adjust)
+
+        // Booster effect
+        delorean.classList.add("booster-active");
+        if (boosterTimeoutId) {
+          clearTimeout(boosterTimeoutId);
+        }
+        boosterTimeoutId = setTimeout(() => {
+          delorean.classList.remove("booster-active");
+          boosterTimeoutId = null;
+        }, boosterDuration);
+      }
+
+      // Helper to get random futuristic colors
+      function getRandomFuturisticColors() {
+        const hue = Math.random() * 360;
+        const saturation = 70 + Math.random() * 20;
+        const lightness1 = 40 + Math.random() * 15;
+        const lightness2 = lightness1 - 15;
+        const glowLightness = 60 + Math.random() * 10;
+        return {
+          color1: `hsl(${hue}, ${saturation}%, ${lightness1}%)`,
+          color2: `hsl(${hue}, ${saturation}%, ${lightness2}%)`,
+          glowColor: `hsla(${hue}, ${
+            saturation + 10
+          }%, ${glowLightness}%, 0.7)`,
+        };
+      }
+
+      function spawnObstacle() {
+        const minGapY = pipeGap / 2 + 50;
+        const maxGapY = window.innerHeight - pipeGap / 2 - 50;
+        const gapY = Math.random() * (maxGapY - minGapY) + minGapY;
+        const topPipeHeight = gapY - pipeGap / 2;
+        const bottomPipeHeight = window.innerHeight - (gapY + pipeGap / 2);
+
+        const obstacleTop = document.createElement("div");
+        obstacleTop.classList.add("obstacle-pipe", "obstacle-top");
+        obstacleTop.style.left = `${window.innerWidth}px`;
+        obstacleTop.style.height = `${topPipeHeight}px`;
+
+        const obstacleBottom = document.createElement("div");
+        obstacleBottom.classList.add("obstacle-pipe", "obstacle-bottom");
+        obstacleBottom.style.left = `${window.innerWidth}px`;
+        obstacleBottom.style.height = `${bottomPipeHeight}px`;
+
+        // Apply current colors
+        const gradient = `linear-gradient(to bottom, ${currentObstacleColor1}, ${currentObstacleColor2})`;
+        const glowBaseAlpha = parseFloat(
+          currentObstacleGlow.split(",")[3] || "0.6"
+        );
+        const shadow = `0 0 5px ${currentObstacleGlow}, 0 0 10px ${currentObstacleGlow.replace(
+          /[\d\.]+\)/,
+          (glowBaseAlpha * 0.66).toFixed(2) + ")"
+        )}`;
+
+        obstacleTop.style.backgroundImage = gradient;
+        obstacleTop.style.boxShadow = shadow;
+        obstacleBottom.style.backgroundImage = gradient;
+        obstacleBottom.style.boxShadow = shadow;
+
+        game.appendChild(obstacleTop);
+        game.appendChild(obstacleBottom);
+
+        // Spawn Coin Logic
+        coinSpawnCounter++; // Increment counter ALWAYS
+        const isBitcoinCoin = coinSpawnCounter % 5 === 0; // Check if it's the 5th coin
+
+        const coinEl = document.createElement("div");
+        // Add specific class based on type
+        coinEl.classList.add(isBitcoinCoin ? "bitcoin-coin" : "coin");
+
+        const coinX = window.innerWidth + pipeWidth / 2 - coinWidth / 2;
+        const coinY = gapY - coinHeight / 2;
+        coinEl.style.left = `${coinX}px`;
+        coinEl.style.top = `${coinY}px`;
+        game.appendChild(coinEl);
+        const coinCollected = false; // Always start uncollected
+
+        // console.log(isBitcoinCoin ? "Spawned Bitcoin Coin" : "Spawned Regular Coin"); // Less verbose log
+
+        // Add obstacle pair details to array, including coin info
+        obstacles.push({
+          topEl: obstacleTop,
+          bottomEl: obstacleBottom,
+          x: window.innerWidth, // Initial x position of the pipes
+          width: pipeWidth,
+          coinEl: coinEl, // Store coin element reference
+          coinCollected: coinCollected, // Store collection state
+          isBonus: isBitcoinCoin, // Store if it's a bonus coin
+        });
+      }
+
+      // Collision check function
+      function checkCollision(rect1, rect2) {
+        // Use tighter collision box for coins maybe? Keep simple for now.
+        const horizontalPadding = 5;
+        const verticalPadding = 5;
+        return (
+          rect1.left + horizontalPadding < rect2.right &&
+          rect1.right - horizontalPadding > rect2.left &&
+          rect1.top + verticalPadding < rect2.bottom &&
+          rect1.bottom - verticalPadding > rect2.top
+        );
+      }
+
+      function gameOver() {
+        console.log("--- Running gameOver ---");
+        gameActive = false;
+        isPaused = false; // Ensure not paused if game over
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+        delorean.classList.remove("booster-active");
+        if (boosterTimeoutId) clearTimeout(boosterTimeoutId);
+        if (tiltTimeoutId) clearTimeout(tiltTimeoutId); // Clear tilt timeout
+
+        // Update and save top score
+        if (score > topScore) {
+          topScore = score;
+          localStorage.setItem("flappyTopScore", topScore); // Save to localStorage
+          console.log("New Top Score!", topScore);
+        }
+
+        // Set banner innerHTML for Score + Top Score + Buttons
+        bannerEl.innerHTML = `
+            <div class="banner-text-content">
+                 <button id="shareButton" class="share-button" aria-label="Share on X">
+                    Share my score
+                    <svg viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6906H311.799L569.165 687.854V687.828Z"/>
+                    </svg>
+                 </button>
+                 <div class="current-score">Score: ${score}</div>
+                <div class="top-score">Top Score: ${topScore}</div>
+                <button id="resetButton" class="reset-button">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                       <path d="M21.5 2v6h-6M2.5 22v-6h6M2 12a10 10 0 0 1 18.19-5.39L21.5 2M22 12a10 10 0 0 1-18.19 5.39L2.5 22"/>
+                    </svg>
+                    Go back to the future
+                </button>
+            </div>
+        `;
+
+        bannerEl.style.display = "block";
+        bannerEl.onclick = null; // Remove any listener from banner itself
+        if (pauseOverlay) pauseOverlay.style.display = "none"; // Hide pause overlay if it was visible
+
+        // Add listener to the reset button
+        const resetButton = document.getElementById("resetButton");
+        if (resetButton) {
+          const tempResetHandler = () => {
+            console.log("Reset button clicked -> calling initializeGame");
+            resetButton.removeEventListener("click", tempResetHandler);
+            initializeGame();
+          };
+          resetButton.addEventListener("click", tempResetHandler);
+          console.log("Added click listener to reset button");
+        } else {
+          console.error("Reset button not found");
+        }
+
+        // Add listener to the share button
+        const shareButton = document.getElementById("shareButton");
+        if (shareButton) {
+          const shareText = `I scored ${score} in Flappy DeLorean! The Future begins Now! @deloreanlabs #FlappyDeLorean`; // Added handle
+          const shareUrl = "https://dmc-game.wal.app/"; // User provided URL
+          const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+            shareText
+          )}&url=${encodeURIComponent(shareUrl)}`;
+
+          const tempShareHandler = () => {
+            console.log("Share button clicked. Opening:", twitterIntentUrl);
+            window.open(twitterIntentUrl, "_blank");
+          };
+          const newShareButton = shareButton.cloneNode(true); // Clone to include SVG
+          if (shareButton.parentNode) {
+            shareButton.parentNode.replaceChild(newShareButton, shareButton);
+            newShareButton.addEventListener("click", tempShareHandler);
+            console.log("Added click listener to share button");
+          } else {
+            console.error(
+              "Share button parent node not found during listener setup"
+            );
+          }
+        } else {
+          console.error("Share button not found");
+        }
+      }
+
+      // --- Pause and Resume Functions ---
+      function pauseGame() {
+        if (!gameActive) return;
+        isPaused = true;
+        gameActive = false;
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+
+        const pausedScoreEl = pauseOverlay.querySelector(".paused-score");
+        if (pausedScoreEl) pausedScoreEl.textContent = `Score: ${score}`;
+        if (pauseOverlay) pauseOverlay.style.display = "flex";
+        console.log("Game Paused");
+      }
+
+      function resumeGame() {
+        if (!isPaused) return;
+        isPaused = false;
+        gameActive = true;
+        if (pauseOverlay) pauseOverlay.style.display = "none";
+
+        if (!animationFrameId) {
+          console.log("Resuming game loop");
+          animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        console.log("Game Resumed");
+      }
+
+      function gameLoop(currentTime) {
+        if (!gameActive) return; // Skips loop if paused or game over
+
+        // Player Physics
+        playerVelocityY += gravity; // Use potentially adjusted gravity
+        playerY += playerVelocityY;
+        delorean.style.top = `${playerY}px`;
+
+        // Ground/Ceiling Collision
+        if (playerY <= 0) {
+          playerY = 0;
+          playerVelocityY = Math.max(0, playerVelocityY);
+          gameOver();
+          return;
+        }
+        if (playerY + playerHeight >= window.innerHeight) {
+          playerY = window.innerHeight - playerHeight;
+          gameOver();
+          return;
+        }
+
+        // Obstacle and Coin Management
+        const playerRect = delorean.getBoundingClientRect();
+        let justScored = false; // Flag to check if score increased this frame
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const obs = obstacles[i];
+          obs.x -= gameSpeed; // Move obstacle data point
+
+          // Update pipe positions
+          obs.topEl.style.left = `${obs.x}px`;
+          obs.bottomEl.style.left = `${obs.x}px`;
+
+          // Update Coin Position & Check Collection
+          if (obs.coinEl && !obs.coinCollected) {
+            const coinScreenX = obs.x + pipeWidth / 2 - coinWidth / 2;
+            obs.coinEl.style.left = `${coinScreenX}px`;
+
+            const coinRect = obs.coinEl.getBoundingClientRect();
+            if (checkCollision(playerRect, coinRect)) {
+              // Check for bonus coin
+              let points = obs.isBonus ? 2 : 1;
+              score += points;
+              scoreEl.textContent = score;
+              obs.coinCollected = true;
+              obs.coinEl.remove();
+              obs.coinEl = null;
+              justScored = true; // Set flag
+              console.log(
+                `Coin collected! +${points} point(s). Score: ${score}`
+              );
+
+              // Check for obstacle color change (every 5 points)
+              if (score > 0 && score % 5 === 0) {
+                // Changed back to 5
+                const newColors = getRandomFuturisticColors();
+                currentObstacleColor1 = newColors.color1;
+                currentObstacleColor2 = newColors.color2;
+                currentObstacleGlow = newColors.glowColor;
+                console.log(
+                  `Score milestone ${score}: Obstacle colors changing!`
+                );
+              }
+            }
+          }
+
+          // Check Pipe Collision AFTER coin check
+          const topPipeRect = obs.topEl.getBoundingClientRect();
+          const bottomPipeRect = obs.bottomEl.getBoundingClientRect();
+          if (
+            checkCollision(playerRect, topPipeRect) ||
+            checkCollision(playerRect, bottomPipeRect)
+          ) {
+            gameOver();
+            return;
+          }
+
+          // Remove Off-screen Obstacles
+          if (obs.x < -obs.width) {
+            obs.topEl.remove();
+            obs.bottomEl.remove();
+            if (obs.coinEl) {
+              obs.coinEl.remove();
+            }
+            obstacles.splice(i, 1);
+          }
+        }
+
+        // Difficulty Increase (Triggered AFTER loop if score increased)
+        if (justScored && score > 0 && score % 5 === 0) {
+          // Keep difficulty increase at 5 for now
+          let speedIncrease = 0.15 + Math.floor(score / 25) * 0.1;
+          gameSpeed += speedIncrease;
+          let intervalReductionFactor = 0.98 - Math.floor(score / 50) * 0.015;
+          intervalReductionFactor = Math.max(0.8, intervalReductionFactor);
+          spawnInterval = Math.max(
+            800,
+            spawnInterval * intervalReductionFactor
+          );
+          console.log(
+            `Score Milestone: ${score}, Speed Inc: +${speedIncrease.toFixed(
+              2
+            )}, New Speed: ${gameSpeed.toFixed(
+              1
+            )}, Interval Factor: ${intervalReductionFactor.toFixed(
+              2
+            )}, New Interval: ${spawnInterval.toFixed(0)}ms`
+          );
+        }
+
+        // Spawning New Obstacles
+        if (currentTime - lastSpawnTime > spawnInterval) {
+          spawnObstacle();
+          lastSpawnTime = currentTime;
+        }
+
+        animationFrameId = requestAnimationFrame(gameLoop);
+      }
+
+      // Event Listeners
+      game.addEventListener("pointerdown", flap);
+      // Keydown listener only for flapping and pause/resume
+      window.addEventListener("keydown", (e) => {
+        if (e.code === "Space") {
+          e.preventDefault();
+          if (gameActive) {
+            flap();
+          }
+          // No longer resets on space when game over
+        }
+        if (e.code === "KeyP") {
+          // Use 'P' to pause/resume
+          if (gameActive) {
+            pauseGame();
+          } else if (isPaused) {
+            resumeGame();
+          }
+        }
+      });
+
+      // Add Listeners for Pause/Resume Buttons
+      if (pauseButton) {
+        pauseButton.addEventListener("click", pauseGame);
+      } else {
+        console.error("Pause button not found!");
+      }
+      // Add listener for resume button after DOM is loaded
+      document.addEventListener("DOMContentLoaded", () => {
+        const resumeBtn = document.getElementById("resumeButton");
+        if (resumeBtn) {
+          resumeBtn.addEventListener("click", resumeGame);
+          console.log("Resume button listener added.");
+        }
+      });
+
+      // Initial Setup
+      // initializeMusic(); // Music init removed
+      initializeGame(); // Then set initial game state
+    </script>
+
+    <script>
+      // --- p5.js Space Background (Simplified - No Logos) ---
+
+      let starsFar = [];
+      let starsMid = [];
+      let starsNear = [];
+      // Reduced star counts for performance
+      let numStarsFar = 100;
+      let numStarsMid = 70;
+      let numStarsNear = 30;
+
+      // Function to initialize a single star layer
+      function initializeStars(starArray, numStars) {
+        starArray.length = 0;
+        for (let i = 0; i < numStars; i++) {
+          starArray.push({
+            x: random(-width * 1.5, width * 1.5),
+            y: random(-height * 1.5, height * 1.5),
+            z: random(width),
+          });
+        }
+      }
+
+      // Define resetBackground in the script scope
+      function resetBackground() {
+        console.log("Resetting background stars");
+        // Check if p5 functions are available
+        if (
+          typeof initializeStars === "function" &&
+          typeof width !== "undefined"
+        ) {
+          // Check width too
+          initializeStars(starsFar, numStarsFar);
+          initializeStars(starsMid, numStarsMid);
+          initializeStars(starsNear, numStarsNear);
+        } else {
+          console.warn(
+            "p5 functions/vars not ready during resetBackground call?"
+          );
+        }
+      }
+
+      function setup() {
+        let cnv = createCanvas(window.innerWidth, window.innerHeight);
+        cnv.style("display", "block");
+        cnv.parent(document.body);
+        cnv.style("position", "absolute");
+        cnv.style("top", "0");
+        cnv.style("left", "0");
+        cnv.style("z-index", "0");
+
+        resetBackground(); // Call reset once here to do initial setup
+
+        // Assign the globally defined function to window
+        window.resetBackground = resetBackground;
+      }
+
+      // Function to update and draw a star layer
+      function drawStarLayer(starArray, factor, minSize, maxSize, baseSpeed) {
+        for (let i = starArray.length - 1; i >= 0; i--) {
+          let star = starArray[i];
+          // Use global gameSpeed from main script
+          let currentSpeedFactor =
+            typeof gameSpeed !== "undefined" ? gameSpeed : baseGameSpeed;
+          if (gameActive) {
+            // Check gameActive flag from main script
+            star.z -= baseSpeed * factor * (currentSpeedFactor * 0.5 + 0.5); // Link speed to gameSpeed
+          }
+          if (star.z < 1) {
+            star.x = random(-width * 1.5, width * 1.5);
+            star.y = random(-height * 1.5, height * 1.5);
+            star.z = random(width * 0.8, width);
+          }
+          let sx = map(star.x / star.z, -1, 1, 0, width);
+          let sy = map(star.y / star.z, -1, 1, 0, height);
+          let r = map(star.z, 0, width, maxSize, minSize);
+          let alpha = map(star.z, 0, width, 255, 50);
+          let brightness = map(star.z, 0, width, 255, 150);
+          let starColor = color(brightness, alpha);
+          if (random() < 0.05) starColor = color(200, 200, 255, alpha * 0.8);
+          else if (random() < 0.05)
+            starColor = color(255, 255, 200, alpha * 0.8);
+          fill(starColor);
+          noStroke();
+          // Add check for sx, sy being valid numbers before drawing
+          if (
+            isFinite(sx) &&
+            isFinite(sy) &&
+            sx > -width &&
+            sx < width * 2 &&
+            sy > -height &&
+            sy < height * 2
+          ) {
+            ellipse(sx, sy, r, r);
+          }
+        }
+      }
+
+      function draw() {
+        background(0, 0, 15); // Very dark blue/black background
+
+        // Draw regular star layers
+        drawStarLayer(starsFar, 0.2, 0.5, 1.5, 0.5);
+        drawStarLayer(starsMid, 0.5, 1, 3, 0.8);
+        drawStarLayer(starsNear, 1.0, 2, 5, 1.2);
+      }
+
+      function windowResized() {
+        resizeCanvas(window.innerWidth, window.innerHeight);
+        // Call resetBackground directly
+        if (!gameActive) {
+          // Use global gameActive state
+          resetBackground();
+        }
+      }
+    </script>
+  </body>
+</html>
