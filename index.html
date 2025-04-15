@@ -72,7 +72,7 @@
         top: 50%;
         transform: translate(-50%, -50%);
         background: rgba(0, 0, 0, 0.7);
-        padding: 30px 40px; /* Adjusted padding */
+        padding: 60px 40px 30px 40px; /* Increased top padding */
         border-radius: 10px;
         color: white;
         font-weight: bold;
@@ -144,6 +144,8 @@
         background-size: cover;
         z-index: 3;
         border: 1px solid rgba(0, 150, 150, 0.5);
+        /* Transition for vertical movement */
+        transition: transform 0.1s linear;
       }
       .obstacle-top {
         top: 0;
@@ -188,7 +190,6 @@
         display: flex; /* Use flexbox for vertical layout */
         flex-direction: column; /* Stack items vertically */
         align-items: center; /* Center items horizontally */
-        padding-bottom: 60px; /* Add padding to prevent overlap with absolute buttons */
       }
 
       /* Styling for Game Over Score Display */
@@ -220,7 +221,7 @@
         }
       }
 
-      /* Coin Styling */
+      /* Coin Styling (Base - used for default DMC coin) */
       .coin {
         position: absolute;
         width: 35px;
@@ -250,6 +251,51 @@
         animation: spin 1s linear infinite; /* Slightly faster spin? */
       }
 
+      /* Sui Coin Styling */
+      .sui-coin {
+        position: absolute;
+        width: 35px;
+        height: 35px;
+        background-image: url("https://assets.crypto.ro/logos/sui-sui-logo.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(0, 200, 255, 0.9); /* Cyan Glow */
+        z-index: 4;
+        animation: spin 1.1s linear infinite;
+      }
+
+      /* Wal Coin Styling */
+      .wal-coin {
+        position: absolute;
+        width: 35px;
+        height: 35px;
+        background-image: url("https://s2.coinmarketcap.com/static/img/coins/64x64/36119.png"); /* Updated URL */
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(200, 200, 200, 0.9); /* Grey Glow */
+        z-index: 4;
+        animation: spin 1.3s linear infinite;
+      }
+
+      /* Lofi Coin Styling */
+      .lofi-coin {
+        position: absolute;
+        width: 35px;
+        height: 35px;
+        background-image: url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR50QoB3S_JoW6Uf8aQNvEUAdet59kqRAkqfg&s");
+        background-size: cover; /* Cover might look better for non-square */
+        background-repeat: no-repeat;
+        background-position: center;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(255, 105, 180, 0.9); /* Pink/Lofi Glow? */
+        z-index: 4;
+        animation: spin 1.4s linear infinite; /* Different spin speed? */
+      }
+
       /* Keyframes for coin spin */
       @keyframes spin {
         from {
@@ -259,6 +305,8 @@
           transform: rotateY(360deg);
         }
       }
+
+      /* REMOVED: Fuel Can Styling */
 
       /* Portal Styling */
       #portal {
@@ -311,18 +359,14 @@
 
       /* Reset Button Styling */
       .reset-button {
-        /* --- MODIFIED: Positioned absolutely --- */
+        /* Also used for Resume button */
         position: absolute;
-        right: 15px; /* Align with share button */
-        bottom: 65px; /* Position above share button (15px + ~40px + 10px margin) */
+        top: 15px;
+        left: 15px;
         z-index: 2; /* Ensure above bg logo */
-        /* --- End Modification --- */
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        /* margin: 0 auto; */ /* Removed margin auto */
-        /* margin-top: 10px; */ /* Removed top margin */
-        /* margin-bottom: 20px; */ /* Removed bottom margin */
         padding: 10px 15px;
         background-color: #0af;
         color: white;
@@ -357,7 +401,7 @@
       /* Share Button Styling */
       .share-button {
         position: absolute;
-        bottom: 15px; /* Position near bottom */
+        top: 15px; /* Position near top */
         right: 15px; /* Position near right */
         display: inline-flex;
         align-items: center;
@@ -504,7 +548,33 @@
         .soundcloud-embed {
           display: none; /* Hide the embed */
         }
+        /* Adjust button positions on mobile if needed */
+        .banner {
+          padding-top: 60px;
+          padding-left: 15px;
+          padding-right: 15px;
+        }
+        .reset-button {
+          top: 10px;
+          left: 10px;
+          padding: 8px 10px;
+          font-size: 0.8rem;
+        }
+        .share-button {
+          top: 10px;
+          right: 10px;
+          padding: 6px 10px;
+          font-size: 0.8rem;
+        }
+        .current-score {
+          font-size: 2.2rem;
+        }
+        .top-score {
+          font-size: 1rem;
+        }
       }
+
+      /* REMOVED: Fuel Bar Styling */
 
       /* p5.js canvas styling (for background) */
       canvas {
@@ -696,32 +766,36 @@
       const bannerEl = document.getElementById("banner");
       const pauseButton = document.getElementById("pauseButton");
       const pauseOverlay = document.getElementById("pauseOverlay");
+      // REMOVED: Fuel Bar Elements
 
       // --- Game Constants ---
       let gravity; // Set in initializeGame based on screen width
       const flapStrength = -7; // Upward velocity impulse on flap
       const pipeWidth = 80; // Width of obstacle pipes
-      const pipeGap = 160; // Vertical gap between pipes
+      const pipeGap = 180; // Increased gap
       const boosterDuration = 200; // How long booster effect lasts in ms
       let baseGameSpeed; // Set in initializeGame based on screen width
       const baseSpawnInterval = 2400; // Starting time between spawns
       // Coin Constants
       const coinWidth = 35; // Match CSS size
       const coinHeight = 35; // Match CSS size
-      const coinSpawnChance = 1.0; // Always spawn coin
+      // REMOVED: Fuel Constants
 
       // Logo URL for game over screen
       const gameOverLogoUrl =
         "https://deloreanlabs.com/_next/image?url=%2Fassets%2Fimages%2Fdmc-coin-1.png&w=1080&q=75"; // Same as score logo
       const bitcoinLogoUrl =
         "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1200px-Bitcoin.svg.png";
+      const suiLogoUrl = "https://assets.crypto.ro/logos/sui-sui-logo.png";
+      const walLogoUrl =
+        "https://s2.coinmarketcap.com/static/img/coins/64x64/36119.png"; // Updated URL
 
       // --- Game State Variables ---
       let playerY; // Vertical position (top of DeLorean)
       let playerVelocityY; // Vertical velocity
       let playerWidth; // Store player dimensions
       let playerHeight;
-      let obstacles = []; // Array holds {topEl, bottomEl, x, width, coinEl, coinCollected, isBonus}
+      let obstacles = []; // Array holds {topEl, bottomEl, x, width, itemEl, itemType, itemCollected, isBonus, gapY, topHeight, bottomHeight, oscillationPhase}
       let score;
       let topScore = 0; // Track top score
       let lastSpawnTime = 0;
@@ -735,66 +809,74 @@
       let currentObstacleColor2 = "#1a2531";
       let currentObstacleGlow = "rgba(0, 255, 255, 0.6)";
       let isPaused = false; // Pause State
-      let coinSpawnCounter = 0; // Coin Spawn Counter
+      // REMOVED: Fuel State Variable
+      let lastTimeRef = null; // For delta time calculation
+      // Obstacle Oscillation State
+      let obstaclesShouldOscillate = false;
+      let obstaclesSinceLastOscillationToggle = 0;
 
       // --- Named event handlers ---
       const startGameHandler = () => startGameHandlerFunc();
-      // Using direct call for reset button listener now
 
       // --- Initialization ---
       function initializeGame() {
         console.log("--- Running initializeGame ---");
 
         // Adjust physics based on screen width
-        const mobileBreakpoint = 768; // Pixels
+        const mobileBreakpoint = 768;
         if (window.innerWidth < mobileBreakpoint) {
-          console.log("Mobile view detected, adjusting physics.");
-          gravity = 0.3; // Slower gravity
-          baseGameSpeed = 2.5; // Slower horizontal speed
+          gravity = 0.3;
+          baseGameSpeed = 2.5;
         } else {
-          console.log("Desktop view detected, using standard physics.");
-          gravity = 0.4; // Standard gravity
-          baseGameSpeed = 3; // Standard horizontal speed
+          gravity = 0.4;
+          baseGameSpeed = 3;
         }
 
         playerWidth = delorean.offsetWidth;
         playerHeight = delorean.offsetHeight;
-        playerY = window.innerHeight / 2 - playerHeight / 2; // Start vertically centered
+        playerY = window.innerHeight / 2 - playerHeight / 2;
         playerVelocityY = 0;
         score = 0;
         obstacles = [];
         lastSpawnTime = 0;
         gameActive = false;
-        isPaused = false; // Reset pause state
-        if (pauseOverlay) pauseOverlay.style.display = "none"; // Hide overlay
-        gameSpeed = baseGameSpeed; // Initialize gameSpeed from base
-        spawnInterval = baseSpawnInterval; // Initialize spawnInterval from base
-        currentObstacleColor1 = "#2c3e50"; // Reset colors
+        isPaused = false;
+        if (pauseOverlay) pauseOverlay.style.display = "none";
+        gameSpeed = baseGameSpeed;
+        spawnInterval = baseSpawnInterval;
+        currentObstacleColor1 = "#2c3e50";
         currentObstacleColor2 = "#1a2531";
         currentObstacleGlow = "rgba(0, 255, 255, 0.6)";
-        coinSpawnCounter = 0; // Reset coin counter
+        // --- NEW: Reset Oscillation State ---
+        obstaclesShouldOscillate = false;
+        obstaclesSinceLastOscillationToggle = 0;
+        // --- End New ---
         scoreEl.textContent = score;
-        // Set initial car position and style for entry animation
-        delorean.style.transition = "none"; // Disable transition during reset
-        delorean.style.opacity = "0"; // Start hidden
-        delorean.style.left = "0px"; // Start at left edge
-        delorean.style.transform = "translateX(0) rotate(0deg)"; // Reset transform
-        delorean.style.top = `${playerY}px`; // Set initial vertical position
+        delorean.style.transition = "none";
+        delorean.style.opacity = "0";
+        delorean.style.left = "0px";
+        delorean.style.transform = "translateX(0) rotate(0deg)";
+        delorean.style.top = `${playerY}px`;
 
         delorean.classList.remove("booster-active");
         if (boosterTimeoutId) clearTimeout(boosterTimeoutId);
-        if (tiltTimeoutId) clearTimeout(tiltTimeoutId); // Clear tilt timeout
+        if (tiltTimeoutId) clearTimeout(tiltTimeoutId);
+        lastTimeRef = null;
 
+        document.querySelectorAll(".obstacle-pipe").forEach((pipe) => {
+          pipe.style.transform = "translateY(0px)"; // Reset transform on pipes
+          pipe.remove();
+        });
+        // --- MODIFIED: Update item selector ---
         document
-          .querySelectorAll(".obstacle-pipe")
-          .forEach((pipe) => pipe.remove());
-        document
-          .querySelectorAll(".coin, .bitcoin-coin")
-          .forEach((coin) => coin.remove()); // Remove both types
-        bannerEl.innerHTML = "Click or Press Space to Flap!"; // Reset banner text
+          .querySelectorAll(
+            ".coin, .bitcoin-coin, .sui-coin, .wal-coin, .lofi-coin"
+          )
+          .forEach((item) => item.remove());
+        // --- End Modification ---
+        bannerEl.innerHTML = "Click or Press Space to Flap!";
         bannerEl.style.display = "block";
 
-        // Ensure portal is visible and reset
         const portalEl = document.getElementById("portal");
         if (portalEl) {
           portalEl.style.display = "block";
@@ -803,54 +885,39 @@
           portalEl.style.transform = "translateY(-50%) scale(1)";
         }
 
-        // Setup banner click listener for START
-        bannerEl.removeEventListener("click", initializeGame); // Remove direct reset listener if any
-        bannerEl.removeEventListener("click", startGameHandler); // Remove previous start listener
-        bannerEl.addEventListener("click", startGameHandler); // Add start listener
+        bannerEl.removeEventListener("click", initializeGame);
+        bannerEl.removeEventListener("click", startGameHandler);
+        bannerEl.addEventListener("click", startGameHandler);
         console.log("Added startGameHandler listener to banner");
 
-        // Remove reset button listener if it exists from previous game over
         const resetButton = document.getElementById("resetButton");
         if (resetButton) {
           const newButton = resetButton.cloneNode(true);
           if (resetButton.parentNode) {
-            // Check if parent exists
             resetButton.parentNode.replaceChild(newButton, resetButton);
-            console.log(
-              "Cleared listeners from potential reset button during init"
-            );
           }
         }
-        // Remove share button listener if it exists
         const shareButton = document.getElementById("shareButton");
         if (shareButton) {
           const newShareButton = shareButton.cloneNode(true);
           if (shareButton.parentNode) {
             shareButton.parentNode.replaceChild(newShareButton, shareButton);
-            console.log(
-              "Cleared listeners from potential share button during init"
-            );
           }
         }
 
-        // Load Top Score
         topScore = parseInt(localStorage.getItem("flappyTopScore") || "0");
         console.log("Loaded Top Score:", topScore);
-
         console.log("Player Y reset to:", playerY);
         console.log("Obstacles cleared:", obstacles.length);
 
         if (window.resetBackground) {
           window.resetBackground();
         } else {
-          console.warn(
-            "window.resetBackground function not found by main game logic."
-          );
+          console.warn("window.resetBackground function not found.");
         }
-        // Re-enable transition after reset styles are applied
+
         setTimeout(() => {
           if (delorean) {
-            // Check if delorean still exists
             delorean.style.transition =
               "left 1s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease-in, transform 0.4s ease-out";
           }
@@ -865,33 +932,28 @@
         bannerEl.removeEventListener("click", startGameHandler);
         console.log("Removed startGameHandler listener from banner");
 
-        // Trigger portal animation
         const portalEl = document.getElementById("portal");
         if (portalEl) portalEl.classList.add("portal-closing");
 
-        bannerEl.style.display = "none"; // Hide banner text
+        bannerEl.style.display = "none";
 
-        // --- Start game logic immediately ---
         console.log("--- Starting game immediately ---");
         playerWidth = delorean.offsetWidth;
         playerHeight = delorean.offsetHeight;
         gameActive = true;
         lastSpawnTime = performance.now();
+        lastTimeRef = performance.now(); // Initialize lastTimeRef for delta time
 
-        // Trigger car entry animation
-        // Ensure transition is enabled before changing styles
         delorean.style.transition =
           "left 1s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease-in, transform 0.4s ease-out";
         requestAnimationFrame(() => {
-          // Use rAF to ensure styles are ready for transition
           delorean.style.opacity = "1";
-          delorean.style.left = "50%"; // Target center position
-          delorean.style.transform = "translateX(-50%) rotate(0deg)"; // Ensure final state includes rotation
+          delorean.style.left = "50%";
+          delorean.style.transform = "translateX(-50%) rotate(0deg)";
         });
 
         flap(); // Initial flap
         if (!animationFrameId) {
-          // Prevent multiple loops if somehow called again
           animationFrameId = requestAnimationFrame(gameLoop);
         }
         console.log("gameActive set to:", gameActive);
@@ -901,21 +963,21 @@
       function flap() {
         if (!gameActive || isPaused) {
           return;
-        } // Don't flap if game not active or paused
+        }
+
+        // REMOVED: Fuel Check/Depletion
+
         playerVelocityY = flapStrength;
 
         // Apply tilt transform
-        delorean.style.transform = "translateX(-50%) rotate(-10deg)"; // Tilt up (Reduced)
-        // Clear previous tilt reset timeout if exists
+        delorean.style.transform = "translateX(-50%) rotate(-10deg)";
         if (tiltTimeoutId) clearTimeout(tiltTimeoutId);
-        // Set timeout to reset rotation to tilt down
         tiltTimeoutId = setTimeout(() => {
           if (gameActive && !isPaused) {
-            // Only reset if game still active and not paused
-            delorean.style.transform = "translateX(-50%) rotate(10deg)"; // Tilt down (Reduced)
+            delorean.style.transform = "translateX(-50%) rotate(10deg)";
           }
           tiltTimeoutId = null;
-        }, 150); // Duration for upward tilt (can adjust)
+        }, 150);
 
         // Booster effect
         delorean.classList.add("booster-active");
@@ -979,40 +1041,108 @@
         game.appendChild(obstacleTop);
         game.appendChild(obstacleBottom);
 
-        // Spawn Coin Logic
-        coinSpawnCounter++; // Increment counter ALWAYS
-        const isBitcoinCoin = coinSpawnCounter % 5 === 0; // Check if it's the 5th coin
+        // --- MODIFIED: Spawn Coin (maybe bonus) ---
+        let itemEl = null;
+        let itemType = null; // 'coin', 'bitcoin', 'sui', 'wal', 'lofi'
+        let isBonus = false;
+        const itemRoll = Math.random();
+        const bonusCoinChance = 0.25; // 25% Bonus Coin (BTC/SUI/WAL/LOFI)
+        const normalCoinChance = 0.6; // 60% Normal Coin (DMC)
+        // Remaining 15% is nothing
 
-        const coinEl = document.createElement("div");
-        // Add specific class based on type
-        coinEl.classList.add(isBitcoinCoin ? "bitcoin-coin" : "coin");
+        let itemX = window.innerWidth + pipeWidth / 2; // Base horizontal position
+        let itemY = gapY; // Base vertical position
+        let itemClass = "";
+        let currentItemWidth = coinWidth; // Default to coin size
+        let currentItemHeight = coinHeight;
 
-        const coinX = window.innerWidth + pipeWidth / 2 - coinWidth / 2;
-        const coinY = gapY - coinHeight / 2;
-        coinEl.style.left = `${coinX}px`;
-        coinEl.style.top = `${coinY}px`;
-        game.appendChild(coinEl);
-        const coinCollected = false; // Always start uncollected
+        if (itemRoll < bonusCoinChance) {
+          // Spawn Bonus Coin
+          isBonus = true;
+          const bonusRoll = Math.random();
+          // --- MODIFIED: Include Lofi Coin ---
+          if (bonusRoll < 0.25) {
+            itemType = "bitcoin";
+          } // 25% each bonus type
+          else if (bonusRoll < 0.5) {
+            itemType = "sui";
+          } else if (bonusRoll < 0.75) {
+            itemType = "wal";
+          } else {
+            itemType = "lofi";
+          }
+          // --- End Modification ---
+          itemClass = `${itemType}-coin`;
 
-        // console.log(isBitcoinCoin ? "Spawned Bitcoin Coin" : "Spawned Regular Coin"); // Less verbose log
+          // Position Bonus Coin Outside Gap
+          const verticalOffset = 15;
+          itemY =
+            Math.random() < 0.5
+              ? topPipeHeight + verticalOffset // Below top pipe edge
+              : window.innerHeight -
+                bottomPipeHeight -
+                currentItemHeight -
+                verticalOffset; // Above bottom pipe edge
+          itemY = Math.max(
+            10,
+            Math.min(window.innerHeight - currentItemHeight - 10, itemY)
+          ); // Clamp Y position
+          console.log(`Spawned Bonus Coin: ${itemType}`);
+        } else if (itemRoll < bonusCoinChance + normalCoinChance) {
+          // Spawn Normal Coin
+          itemType = "coin";
+          isBonus = false;
+          itemClass = "coin";
+          itemY = gapY - currentItemHeight / 2; // Center in gap
+          // console.log("Spawned Regular Coin");
+        } // Else: nothing spawns
 
-        // Add obstacle pair details to array, including coin info
+        // Create and append element if an item type was chosen
+        if (itemType) {
+          itemEl = document.createElement("div");
+          itemEl.classList.add(itemClass);
+          itemX = window.innerWidth + pipeWidth / 2 - currentItemWidth / 2; // Final X calc
+          itemEl.style.left = `${itemX}px`;
+          itemEl.style.top = `${itemY}px`;
+          game.appendChild(itemEl);
+        }
+        // --- End Modification ---
+
+        // Add obstacle pair details to array, including item info
         obstacles.push({
           topEl: obstacleTop,
           bottomEl: obstacleBottom,
-          x: window.innerWidth, // Initial x position of the pipes
+          x: window.innerWidth,
           width: pipeWidth,
-          coinEl: coinEl, // Store coin element reference
-          coinCollected: coinCollected, // Store collection state
-          isBonus: isBitcoinCoin, // Store if it's a bonus coin
+          itemEl: itemEl,
+          itemType: itemType,
+          itemCollected: itemType === null,
+          isBonus: isBonus,
+          gapY: gapY,
+          topHeight: topPipeHeight,
+          bottomHeight: bottomPipeHeight,
+          oscillationPhase: Math.random() * Math.PI * 2, // Add random phase for oscillation
         });
+
+        // --- NEW: Toggle Obstacle Oscillation ---
+        if (score >= 20) {
+          // Only start checking/toggling after score 20
+          obstaclesSinceLastOscillationToggle++;
+          if (obstaclesSinceLastOscillationToggle >= 10) {
+            obstaclesShouldOscillate = !obstaclesShouldOscillate; // Toggle state
+            obstaclesSinceLastOscillationToggle = 0; // Reset counter
+            console.log(
+              `Obstacle oscillation toggled: ${obstaclesShouldOscillate}`
+            );
+          }
+        }
+        // --- End New ---
       }
 
       // Collision check function
       function checkCollision(rect1, rect2) {
-        // Use tighter collision box for coins maybe? Keep simple for now.
-        const horizontalPadding = 5;
-        const verticalPadding = 5;
+        const horizontalPadding = 10; // Smaller hitbox
+        const verticalPadding = 10; // Smaller hitbox
         return (
           rect1.left + horizontalPadding < rect2.right &&
           rect1.right - horizontalPadding > rect2.left &&
@@ -1029,12 +1159,16 @@
         animationFrameId = null;
         delorean.classList.remove("booster-active");
         if (boosterTimeoutId) clearTimeout(boosterTimeoutId);
-        if (tiltTimeoutId) clearTimeout(tiltTimeoutId); // Clear tilt timeout
+        if (tiltTimeoutId) clearTimeout(tiltTimeoutId);
+        // --- NEW: Reset oscillation state on game over ---
+        obstaclesShouldOscillate = false;
+        obstaclesSinceLastOscillationToggle = 0;
+        // --- End New ---
 
         // Update and save top score
         if (score > topScore) {
           topScore = score;
-          localStorage.setItem("flappyTopScore", topScore); // Save to localStorage
+          localStorage.setItem("flappyTopScore", topScore);
           console.log("New Top Score!", topScore);
         }
 
@@ -1047,7 +1181,7 @@
                         <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6906H311.799L569.165 687.854V687.828Z"/>
                     </svg>
                  </button>
-                 <div class="current-score">Score: ${score}</div>
+                <div class="current-score">Score: ${score}</div>
                 <div class="top-score">Top Score: ${topScore}</div>
                 <button id="resetButton" class="reset-button">
                     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1059,14 +1193,13 @@
         `;
 
         bannerEl.style.display = "block";
-        bannerEl.onclick = null; // Remove any listener from banner itself
-        if (pauseOverlay) pauseOverlay.style.display = "none"; // Hide pause overlay if it was visible
+        bannerEl.onclick = null;
+        if (pauseOverlay) pauseOverlay.style.display = "none";
 
         // Add listener to the reset button
         const resetButton = document.getElementById("resetButton");
         if (resetButton) {
           const tempResetHandler = () => {
-            console.log("Reset button clicked -> calling initializeGame");
             resetButton.removeEventListener("click", tempResetHandler);
             initializeGame();
           };
@@ -1079,25 +1212,21 @@
         // Add listener to the share button
         const shareButton = document.getElementById("shareButton");
         if (shareButton) {
-          const shareText = `I scored ${score} in Flappy DeLorean! The Future begins Now! @deloreanlabs #FlappyDeLorean`; // Added handle
-          const shareUrl = "https://dmc-game.wal.app/"; // User provided URL
+          const shareText = `I scored ${score} in Flap to the Future! The Future begins Now! @deloreanlabs #FlapToTheFuture`; // Updated game name
+          const shareUrl = "https://dmc-game.wal.app/";
           const twitterIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
             shareText
           )}&url=${encodeURIComponent(shareUrl)}`;
 
           const tempShareHandler = () => {
-            console.log("Share button clicked. Opening:", twitterIntentUrl);
             window.open(twitterIntentUrl, "_blank");
           };
-          const newShareButton = shareButton.cloneNode(true); // Clone to include SVG
+          const newShareButton = shareButton.cloneNode(true);
           if (shareButton.parentNode) {
             shareButton.parentNode.replaceChild(newShareButton, shareButton);
             newShareButton.addEventListener("click", tempShareHandler);
-            console.log("Added click listener to share button");
           } else {
-            console.error(
-              "Share button parent node not found during listener setup"
-            );
+            console.error("Share button parent node not found");
           }
         } else {
           console.error("Share button not found");
@@ -1126,6 +1255,8 @@
 
         if (!animationFrameId) {
           console.log("Resuming game loop");
+          // Reset lastTimeRef to prevent large jump after pause
+          lastTimeRef = performance.now(); // Reset timer reference
           animationFrameId = requestAnimationFrame(gameLoop);
         }
         console.log("Game Resumed");
@@ -1134,9 +1265,15 @@
       function gameLoop(currentTime) {
         if (!gameActive) return; // Skips loop if paused or game over
 
+        // Calculate time delta for smoother physics
+        const deltaTime = currentTime - (lastTimeRef || currentTime);
+        lastTimeRef = currentTime; // Assign to variable directly
+        const effectiveDeltaTime = Math.min(deltaTime, 32); // Cap delta time
+        const multiplier = effectiveDeltaTime / (1000 / 60); // Adjust physics based on 60fps target
+
         // Player Physics
-        playerVelocityY += gravity; // Use potentially adjusted gravity
-        playerY += playerVelocityY;
+        playerVelocityY += gravity * multiplier; // Apply gravity using multiplier
+        playerY += playerVelocityY * multiplier; // Apply velocity using multiplier
         delorean.style.top = `${playerY}px`;
 
         // Ground/Ceiling Collision
@@ -1152,57 +1289,113 @@
           return;
         }
 
-        // Obstacle and Coin Management
+        // Obstacle and Item Management
         const playerRect = delorean.getBoundingClientRect();
         let justScored = false; // Flag to check if score increased this frame
 
         for (let i = obstacles.length - 1; i >= 0; i--) {
           const obs = obstacles[i];
-          obs.x -= gameSpeed; // Move obstacle data point
+          obs.x -= gameSpeed * multiplier; // Move obstacle data point using multiplier
 
-          // Update pipe positions
+          // Calculate and Apply Obstacle Oscillation
+          let currentVerticalOffset = 0;
+          if (obstaclesShouldOscillate) {
+            // Check the flag
+            const oscillationAmplitude = 25; // Max pixels up/down
+            const oscillationFrequency = 0.006; // Speed of oscillation relative to x pos
+            currentVerticalOffset =
+              oscillationAmplitude *
+              Math.sin(obs.x * oscillationFrequency + obs.oscillationPhase);
+          }
+          // Apply vertical offset using transform
+          obs.topEl.style.transform = `translateY(${currentVerticalOffset}px)`;
+          obs.bottomEl.style.transform = `translateY(${currentVerticalOffset}px)`;
+
+          // Update pipe horizontal positions
           obs.topEl.style.left = `${obs.x}px`;
           obs.bottomEl.style.left = `${obs.x}px`;
 
-          // Update Coin Position & Check Collection
-          if (obs.coinEl && !obs.coinCollected) {
-            const coinScreenX = obs.x + pipeWidth / 2 - coinWidth / 2;
-            obs.coinEl.style.left = `${coinScreenX}px`;
+          // Update Item Position & Check Collection
+          if (obs.itemEl && !obs.itemCollected) {
+            const itemWidth =
+              obs.itemType && obs.itemType.includes("coin") ? coinWidth : 0; // Get width based on type (coin or bonus coin)
+            const itemHeight =
+              obs.itemType && obs.itemType.includes("coin") ? coinHeight : 0;
+            const itemX = obs.x + pipeWidth / 2 - itemWidth / 2; // Center item horizontally with pipe
+            let itemY;
 
-            const coinRect = obs.coinEl.getBoundingClientRect();
-            if (checkCollision(playerRect, coinRect)) {
-              // Check for bonus coin
-              let points = obs.isBonus ? 2 : 1;
-              score += points;
-              scoreEl.textContent = score;
-              obs.coinCollected = true;
-              obs.coinEl.remove();
-              obs.coinEl = null;
-              justScored = true; // Set flag
-              console.log(
-                `Coin collected! +${points} point(s). Score: ${score}`
-              );
+            if (obs.isBonus) {
+              // Position bonus coins relative to moving pipe edges
+              const verticalOffsetMargin = 15;
+              const currentTopPipeBottomEdge =
+                obs.topHeight + currentVerticalOffset;
+              const currentBottomPipeTopEdge =
+                window.innerHeight - obs.bottomHeight + currentVerticalOffset;
+              const spawnedLow = obs.gapY > window.innerHeight / 2;
 
-              // Check for obstacle color change (every 5 points)
-              if (score > 0 && score % 5 === 0) {
-                // Changed back to 5
-                const newColors = getRandomFuturisticColors();
-                currentObstacleColor1 = newColors.color1;
-                currentObstacleColor2 = newColors.color2;
-                currentObstacleGlow = newColors.glowColor;
+              itemY = spawnedLow
+                ? currentBottomPipeTopEdge - itemHeight - verticalOffsetMargin
+                : currentTopPipeBottomEdge + verticalOffsetMargin;
+
+              itemY = Math.max(
+                10,
+                Math.min(window.innerHeight - itemHeight - 10, itemY)
+              ); // Clamp
+            } else {
+              // Normal items stay centered in the (moving) gap center
+              itemY = obs.gapY - itemHeight / 2 + currentVerticalOffset; // Add offset here too
+            }
+
+            obs.itemEl.style.left = `${itemX}px`;
+            obs.itemEl.style.top = `${itemY}px`; // Apply calculated Y
+
+            const itemRect = obs.itemEl.getBoundingClientRect();
+            if (checkCollision(playerRect, itemRect)) {
+              if (
+                obs.itemType === "coin" ||
+                obs.itemType === "bitcoin" ||
+                obs.itemType === "sui" ||
+                obs.itemType === "wal" ||
+                obs.itemType === "lofi"
+              ) {
+                // Check all coin types
+                let points = obs.isBonus ? 2 : 1; // Use isBonus flag
+                score += points;
+                scoreEl.textContent = score;
+                justScored = true;
                 console.log(
-                  `Score milestone ${score}: Obstacle colors changing!`
+                  `${obs.itemType} collected! +${points} point(s). Score: ${score}`
                 );
+
+                // REMOVED: Fuel refill on coin collect
+
+                // Check for obstacle color change (every 5 points)
+                if (score > 0 && score % 5 === 0) {
+                  const newColors = getRandomFuturisticColors();
+                  currentObstacleColor1 = newColors.color1;
+                  currentObstacleColor2 = newColors.color2;
+                  currentObstacleGlow = newColors.glowColor;
+                  console.log(
+                    `Score milestone ${score}: Obstacle colors changing!`
+                  );
+                }
               }
+              // REMOVED: Fuel can collection logic
+
+              obs.itemCollected = true;
+              obs.itemEl.remove();
+              obs.itemEl = null;
+              obs.itemType = null;
             }
           }
 
-          // Check Pipe Collision AFTER coin check
+          // Check Pipe Collision AFTER item check
           const topPipeRect = obs.topEl.getBoundingClientRect();
           const bottomPipeRect = obs.bottomEl.getBoundingClientRect();
           if (
-            checkCollision(playerRect, topPipeRect) ||
-            checkCollision(playerRect, bottomPipeRect)
+            !obs.itemCollected && // Don't check pipe collision if item was just collected this frame
+            (checkCollision(playerRect, topPipeRect) ||
+              checkCollision(playerRect, bottomPipeRect))
           ) {
             gameOver();
             return;
@@ -1212,26 +1405,27 @@
           if (obs.x < -obs.width) {
             obs.topEl.remove();
             obs.bottomEl.remove();
-            if (obs.coinEl) {
-              obs.coinEl.remove();
+            if (obs.itemEl) {
+              obs.itemEl.remove();
             }
             obstacles.splice(i, 1);
           }
         }
 
         // Difficulty Increase (Triggered AFTER loop if score increased)
-        if (justScored && score > 0 && score % 5 === 0) {
-          // Keep difficulty increase at 5 for now
-          let speedIncrease = 0.15 + Math.floor(score / 25) * 0.1;
+        // --- MODIFIED: Increase difficulty every 3 points ---
+        if (justScored && score > 0 && score % 3 === 0) {
+          // --- End Modification ---
+          let speedIncrease = 0.15 + Math.floor(score / 25) * 0.1; // Keep magnitude same for now
           gameSpeed += speedIncrease;
-          let intervalReductionFactor = 0.98 - Math.floor(score / 50) * 0.015;
+          let intervalReductionFactor = 0.98 - Math.floor(score / 50) * 0.015; // Keep magnitude same
           intervalReductionFactor = Math.max(0.8, intervalReductionFactor);
           spawnInterval = Math.max(
             800,
             spawnInterval * intervalReductionFactor
           );
           console.log(
-            `Score Milestone: ${score}, Speed Inc: +${speedIncrease.toFixed(
+            `Score Milestone: ${score} (every 3), Speed Inc: +${speedIncrease.toFixed(
               2
             )}, New Speed: ${gameSpeed.toFixed(
               1
